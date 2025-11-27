@@ -96,6 +96,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             font-weight: 500;
+            position: relative;
         }
 
         .day:hover {
@@ -119,10 +120,6 @@
         .selected {
             background-color: #2575fc;
             color: white;
-        }
-
-        .events-indicator {
-            position: relative;
         }
 
         .events-indicator::after {
@@ -155,9 +152,9 @@
         <div class="calendar-header">
             <div class="month-year" id="month-year">Январь 2023</div>
             <div class="navigation">
-                <button class="nav-btn" id="prev-month">&#10094;</button>
+                <button class="nav-btn" id="prev-month">←</button>
                 <button class="nav-btn" id="today-btn">Сегодня</button>
-                <button class="nav-btn" id="next-month">&#10095;</button>
+                <button class="nav-btn" id="next-month">→</button>
             </div>
         </div>
         
@@ -181,7 +178,10 @@
     </div>
 
     <script>
+        // Ждем полной загрузки DOM
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM загружен, инициализируем календарь...");
+            
             const monthYearElement = document.getElementById('month-year');
             const daysContainer = document.getElementById('days-container');
             const prevMonthBtn = document.getElementById('prev-month');
@@ -198,9 +198,6 @@
                 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
             ];
             
-            // Дни недели на русском
-            const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-            
             // События для демонстрации
             const events = {
                 '2023-10-15': 'Встреча с клиентом',
@@ -208,11 +205,14 @@
                 '2023-10-25': 'Поездка',
                 '2023-11-05': 'Конференция',
                 '2023-11-12': 'Врач',
-                '2023-11-18': 'Ужин с друзьями'
+                '2023-11-18': 'Ужин с друзьями',
+                '2023-12-01': 'Начало зимы',
+                '2023-12-25': 'Рождество'
             };
             
             // Функция для обновления календаря
             function updateCalendar() {
+                console.log("Обновляем календарь...");
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
                 
@@ -222,11 +222,13 @@
                 // Очищаем контейнер с днями
                 daysContainer.innerHTML = '';
                 
-                // Получаем первый день месяца и день недели
+                // Получаем первый день месяца
                 const firstDay = new Date(year, month, 1);
-                const firstDayWeekday = firstDay.getDay();
+                // День недели (0 - воскресенье, 1 - понедельник, и т.д.)
+                let firstDayWeekday = firstDay.getDay();
                 // Корректируем для понедельника как первого дня недели
-                const startingDay = firstDayWeekday === 0 ? 6 : firstDayWeekday - 1;
+                if (firstDayWeekday === 0) firstDayWeekday = 7; // Воскресенье становится 7
+                const startingDay = firstDayWeekday - 1; // Теперь понедельник = 0
                 
                 // Получаем последний день месяца
                 const lastDay = new Date(year, month + 1, 0);
@@ -235,11 +237,13 @@
                 // Получаем последний день предыдущего месяца
                 const prevMonthLastDay = new Date(year, month, 0).getDate();
                 
+                console.log(`Месяц: ${month}, Дней в месяце: ${daysInMonth}, Начинается с: ${startingDay}`);
+                
                 // Добавляем дни предыдущего месяца
-                for (let i = startingDay - 1; i >= 0; i--) {
+                for (let i = 0; i < startingDay; i++) {
                     const day = document.createElement('div');
                     day.className = 'day other-month';
-                    day.textContent = prevMonthLastDay - i;
+                    day.textContent = prevMonthLastDay - startingDay + i + 1;
                     daysContainer.appendChild(day);
                 }
                 
@@ -267,6 +271,7 @@
                     const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                     if (events[dateString]) {
                         day.classList.add('events-indicator');
+                        day.title = events[dateString]; // Подсказка при наведении
                     }
                     
                     day.textContent = i;
@@ -274,6 +279,7 @@
                     
                     // Добавляем обработчик клика
                     day.addEventListener('click', function() {
+                        console.log("Выбрана дата:", dateString);
                         selectDate(new Date(year, month, i));
                     });
                     
@@ -282,7 +288,8 @@
                 
                 // Добавляем дни следующего месяца
                 const totalCells = 42; // 6 строк по 7 дней
-                const remainingCells = totalCells - (startingDay + daysInMonth);
+                const daysAdded = startingDay + daysInMonth;
+                const remainingCells = totalCells - daysAdded;
                 
                 for (let i = 1; i <= remainingCells; i++) {
                     const day = document.createElement('div');
@@ -320,22 +327,31 @@
             
             // Обработчики событий для кнопок навигации
             prevMonthBtn.addEventListener('click', function() {
+                console.log("Предыдущий месяц");
                 currentDate.setMonth(currentDate.getMonth() - 1);
                 updateCalendar();
             });
             
             nextMonthBtn.addEventListener('click', function() {
+                console.log("Следующий месяц");
                 currentDate.setMonth(currentDate.getMonth() + 1);
                 updateCalendar();
             });
             
             todayBtn.addEventListener('click', function() {
+                console.log("Сегодня");
                 currentDate = new Date();
                 selectDate(new Date());
             });
             
             // Инициализация календаря
+            console.log("Запускаем инициализацию...");
             updateCalendar();
+            
+            // Добавляем обработчик ошибок
+            window.addEventListener('error', function(e) {
+                console.error('Ошибка:', e.error);
+            });
         });
     </script>
 </body>
